@@ -14,3 +14,13 @@ NestJS로 디스코드 봇을 만듭니다. 컨트롤러를 통해 명령어를 
 npm install
 npm run start
 ```
+
+### Environments
+
+|        Name         | Description                                        | Required? |
+| :-----------------: | :------------------------------------------------- | :-------: |
+|   `DISCORD_TOKEN`   | 디스코드 봇의 토큰                                 |     Y     |
+| `DISCORD_CLIENT_ID` | 디스코드 개발자 포탈에서 등록한 봇의 클라이언트 ID |     Y     |
+| `DISCORD_GUILD_ID`  | Slash command를 등록할 디스코드 서버의 ID          |     N     |
+
+> `.env.example` 파일을 참고해주세요.
