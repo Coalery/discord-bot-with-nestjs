@@ -5,6 +5,7 @@ import {
   GatewayIntentBits,
   REST,
   Routes,
+  User as DiscordUser,
 } from 'discord.js';
 import { EmptyAdapter } from '../core/empty.adapter';
 import { RequestHandler } from '@nestjs/common/interfaces';
@@ -17,7 +18,11 @@ type DiscordBulkApplicationCommand = {
   description: string;
 };
 
-type DiscordResponse = {
+export type DiscordRequest = {
+  sender: DiscordUser;
+};
+
+export type DiscordResponse = {
   reply: ChatInputCommandInteraction['reply'];
 };
 
@@ -37,14 +42,17 @@ export class DiscordBotAdapter extends EmptyAdapter {
       'interactionCreate',
       async (interaction: BaseInteraction) => {
         if (!interaction.isChatInputCommand()) return;
-        const request = {};
+        const request: DiscordRequest = {
+          sender: interaction.user,
+        };
         const response: DiscordResponse = {
           reply: interaction.reply.bind(interaction),
         };
-        const handler = this.commands[interaction.commandName];
 
+        const handler = this.commands[interaction.commandName];
         if (!handler) {
           interaction.reply('Command not found');
+          return;
         }
 
         await handler(request, response);
@@ -92,21 +100,23 @@ export class DiscordBotAdapter extends EmptyAdapter {
     const { token, clientId, guildId } = this.config;
 
     const restClient = new REST().setToken(token);
-    await restClient.put(
-      guildId
-        ? Routes.applicationGuildCommands(clientId, guildId)
-        : Routes.applicationCommands(clientId),
-      {
-        body: Object.keys(this.commands).map<DiscordBulkApplicationCommand>(
-          (command) => ({
-            name: command,
-            description: 'some-description',
-          }),
-        ),
-      },
-    );
 
-    await this.discordClient.login(this.config.token);
+    await Promise.all([
+      restClient.put(
+        guildId
+          ? Routes.applicationGuildCommands(clientId, guildId)
+          : Routes.applicationCommands(clientId),
+        {
+          body: Object.keys(this.commands).map<DiscordBulkApplicationCommand>(
+            (command) => ({
+              name: command,
+              description: 'some-description',
+            }),
+          ),
+        },
+      ),
+      this.discordClient.login(this.config.token),
+    ]);
   }
 
   private removeLeadingSlash(path: string): string {

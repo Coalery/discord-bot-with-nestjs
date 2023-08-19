@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app.module';
 import { DiscordBotAdapter } from './adapter/discord-bot.adapter';
+import { ConsoleLogger, Logger } from '@nestjs/common';
 
 dotenv.config();
 
@@ -15,7 +16,11 @@ async function bootstrap() {
       guildId: process.env.DISCORD_GUILD_ID,
     }),
   );
-  await app.listen(3000);
+  const logger = new Logger('DiscordBotWithNestjs', { timestamp: true });
+
+  await app.listen(3000, () => {
+    logger.log('Ready to listen the commands');
+  });
 }
 
 bootstrap();
