@@ -92,7 +92,7 @@ export class DiscordBotAdapter extends EmptyAdapter {
     } else if (body instanceof Object) {
       response.reply(JSON.stringify(body));
     } else {
-      response.reply(body);
+      response.reply(String(body));
     }
   }
 
