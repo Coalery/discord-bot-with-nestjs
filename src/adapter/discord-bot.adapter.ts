@@ -1,5 +1,6 @@
 import {
   BaseInteraction,
+  ChatInputCommandInteraction,
   Client,
   GatewayIntentBits,
   REST,
@@ -16,6 +17,10 @@ type DiscordBulkApplicationCommand = {
   description: string;
 };
 
+type DiscordResponse = {
+  reply: ChatInputCommandInteraction['reply'];
+};
+
 export class DiscordBotAdapter extends EmptyAdapter {
   private readonly discordClient: Client;
   private readonly config: DiscordBotAdapterConfig;
@@ -30,9 +35,19 @@ export class DiscordBotAdapter extends EmptyAdapter {
 
     this.discordClient.on(
       'interactionCreate',
-      (interaction: BaseInteraction) => {
+      async (interaction: BaseInteraction) => {
         if (!interaction.isChatInputCommand()) return;
-        interaction.reply('Hello World!');
+        const request = {};
+        const response: DiscordResponse = {
+          reply: interaction.reply.bind(interaction),
+        };
+        const handler = this.commands[interaction.commandName];
+
+        if (!handler) {
+          interaction.reply('Command not found');
+        }
+
+        await handler(request, response);
       },
     );
   }
@@ -46,9 +61,7 @@ export class DiscordBotAdapter extends EmptyAdapter {
 
     const path = rawPath as string;
     const handler = rawHandler as RequestHandler;
-
     const command = this.removeLeadingSlash(path);
-
     this.commands[command] = handler;
   }
 
@@ -59,6 +72,20 @@ export class DiscordBotAdapter extends EmptyAdapter {
     this.startDiscordClient()
       .then(() => callback())
       .catch((e) => callback(e));
+  }
+
+  public reply(
+    response: DiscordResponse,
+    body: any,
+    statusCode?: number,
+  ): void {
+    if (!body) {
+      response.reply('Message Empty');
+    } else if (body instanceof Object) {
+      response.reply(JSON.stringify(body));
+    } else {
+      response.reply(body);
+    }
   }
 
   private async startDiscordClient(): Promise<void> {
